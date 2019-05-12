@@ -3,7 +3,14 @@
     <div class="col-md-6">
       <div class="form-group">
         <label>Order No.</label>
-        <input name="OrderNo" #OrderNo="ngModel" [(ngModel)]="service.formData.OrderNo" class="form-control">
+        
+        <div class="input-group">
+            <div class="input-group-prepend">
+              <div class="input-group-text">#</div>
+            </div>
+            <input name="OrderNo" #OrderNo="ngModel" [(ngModel)]="service.formData.OrderNo" class="form-control" readonly>
+          </div>
+        
       </div>
       <div class="form-group">
         <label>Customer</label>
@@ -19,12 +26,20 @@
         <label>Payment Method</label>
         <select name="PMethod" #PMethod="ngModel" [(ngModel)]="service.formData.PMethod" class="form-control">
           <option value="">--Select--</option>
+          <option value="Cash">Cash</option>
+          <option value="Card">Card</option>
         </select>
       </div>
 
       <div class="form-group">
         <label>Grand Total</label>
-        <input name="GTotal" #GTotal="ngModel" [(ngModel)]="service.formData.GTotal" class="form-control">
+        <div class="input-group">
+          <div class="input-group-prepend">
+            <div class="input-group-text">$</div>
+          </div>
+          <input name="GTotal" #GTotal="ngModel" [(ngModel)]="service.formData.GTotal" class="form-control" readonly>
+        </div>
+        
       </div>
     </div>
   </div>
