@@ -1,8 +1,10 @@
+import { CustomerService } from './../../shared/customer.service';
 import { OrderItemsComponent } from './../order-items/order-items.component';
 import { OrderService } from './../../shared/order.service';
 import { Component, OnInit } from '@angular/core';
 import { NgForm } from '@angular/forms';
-import { MatDialog, MatDialogConfig} from '@angular/material/dialog';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { Customer } from 'src/app/shared/customer.model';
 
 @Component({
   selector: 'app-order',
@@ -10,12 +12,16 @@ import { MatDialog, MatDialogConfig} from '@angular/material/dialog';
   styles: []
 })
 export class OrderComponent implements OnInit {
-
+  customerList: Customer[];
   constructor(private service: OrderService,
-              private dialog: MatDialog) { }
+              private dialog: MatDialog,
+              private customerService: CustomerService) { }
 
   ngOnInit() {
     this.resetForm();
+
+    this.customerService.getCustomerList().then(res => this.customerList = res as Customer[]);
+
   }
   resetForm(form?: NgForm) {
     // tslint:disable-next-line: no-conditional-assignment
@@ -36,7 +42,7 @@ export class OrderComponent implements OnInit {
     dialogConfig.autoFocus = true;
     dialogConfig.disableClose = true;
     dialogConfig.width = '50%';
-    dialogConfig.data = {orderItemIndex, OrderId };
+    dialogConfig.data = { orderItemIndex, OrderId };
     this.dialog.open(OrderItemsComponent, dialogConfig).afterClosed().subscribe(res => {
       this.updateGrandTotal();
     });
