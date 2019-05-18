@@ -13,6 +13,7 @@ import { Customer } from 'src/app/shared/customer.model';
 })
 export class OrderComponent implements OnInit {
   customerList: Customer[];
+  isValid = true;
   constructor(private service: OrderService,
               private dialog: MatDialog,
               private customerService: CustomerService) { }
@@ -44,7 +45,7 @@ export class OrderComponent implements OnInit {
     dialogConfig.width = '50%';
     dialogConfig.data = { orderItemIndex, OrderId };
     this.dialog.open(OrderItemsComponent, dialogConfig).afterClosed().subscribe(res => {
-      this.updateGrandTotal();
+    this.updateGrandTotal();
     });
 
   }
@@ -59,5 +60,23 @@ export class OrderComponent implements OnInit {
     this.service.formData.GTotal = parseFloat((this.service.formData.GTotal).toFixed(2));
 
   }
+  validateForm() {
+    this.isValid = true;
+    if (this.service.formData.CustomerID === 0) {
+      this.isValid = false;
+    } else if (this.service.orderItems.length === 0) {
+      this.isValid = false;
+    }
+    return this.isValid;
+
+  }
+  onSubmit(form: NgForm) {
+    if (this.validateForm()) {
+      this.service.saveOrUpdateOrder().subscribe(res => {
+      this.resetForm();
+      });
+    }
+  }
+
 
 }

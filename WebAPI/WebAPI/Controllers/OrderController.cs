@@ -74,13 +74,28 @@ namespace WebAPI.Controllers
         [ResponseType(typeof(Order))]
         public IHttpActionResult PostOrder(Order order)
         {
-            if (!ModelState.IsValid)
+            try
+            {   //Order table
+                db.Orders.Add(order);
+
+                //OrderItem tabel
+                foreach (var item in order.OrderItems)
+                {
+                    db.OrderItems.Add(item);
+
+                }
+
+                db.SaveChanges();
+                return Ok();
+
+            }
+            catch (Exception ex)
             {
-                return BadRequest(ModelState);
+                
+                throw ex;
             }
 
-            db.Orders.Add(order);
-            db.SaveChanges();
+            
 
             return CreatedAtRoute("DefaultApi", new { id = order.OrderID }, order);
         }
