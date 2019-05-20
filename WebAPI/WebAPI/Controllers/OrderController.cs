@@ -17,102 +17,122 @@ namespace WebAPI.Controllers
         private DBModel db = new DBModel();
 
         // GET: api/Order
-        public IQueryable<Order> GetOrders()
+        public object GetOrders()
         {
-            return db.Orders;
+            var result = (from a in db.Orders
+                          join b in db.Customers on a.CustomerID equals b.CustomerID
+                          select new
+                          {
+                              a.OrderID,
+                              a.OrderNo,
+                              Customer = b.Name,
+                              a.PMethod,
+                              a.GTotal
+
+                          });
+            return result;
         }
 
         // GET: api/Order/5
         [ResponseType(typeof(Order))]
         public IHttpActionResult GetOrder(long id)
         {
-            Order order = db.Orders.Find(id);
-            if (order == null)
+            var order = (from a in db.Orders
+                         where a.OrderID == id
+                         select new
+                         {
+                             a.OrderID,
+                             a.OrderNo,
+                             a.CustomerID,
+                             a.PMethod,
+                             a.GTotal,
+                             DeletedOrderItemIDs=""
+                         }).FirstOrDefault();
+            var orderDetails = (from a in db.OrderItems
+                                join b in db.Items on a.ItemID equals b.ItemID
+                                where a.OrderID == id
+                                select new
+                                {
+                                    a.OrderID,
+                                    a.OrderItemID,
+                                    a.ItemID,
+                                    ItemName = b.Name,
+                                    b.Price,
+                                    a.Quantity,
+                                    Total = a.Quantity * b.Price
+                                }).ToList();
+            return Ok(new
             {
-                return NotFound();
-            }
-
-            return Ok(order);
+                order,
+                orderDetails
+            });
         }
 
-        // PUT: api/Order/5
-        [ResponseType(typeof(void))]
-        public IHttpActionResult PutOrder(long id, Order order)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            if (id != order.OrderID)
-            {
-                return BadRequest();
-            }
-
-            db.Entry(order).State = EntityState.Modified;
-
-            try
-            {
-                db.SaveChanges();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!OrderExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return StatusCode(HttpStatusCode.NoContent);
-        }
+        
 
         // POST: api/Order
         [ResponseType(typeof(Order))]
         public IHttpActionResult PostOrder(Order order)
         {
-            try
-            {   //Order table
+            //Order table
+            if (order.OrderID == 0)
+            {
                 db.Orders.Add(order);
+            }
+            else
+            {
+                db.Entry(order).State = EntityState.Modified;
+            }
 
-                //OrderItem tabel
-                foreach (var item in order.OrderItems)
+            //OrderItem tabel
+            foreach (var item in order.OrderItems)
+            {
+                if (item.OrderItemID == 0)
                 {
                     db.OrderItems.Add(item);
-
                 }
-
-                db.SaveChanges();
-                return Ok();
+                else
+                {
+                    db.Entry(item).State = EntityState.Modified;
+                }
+                   
 
             }
-            catch (Exception ex)
+
+            //Delete for OrderItems
+            foreach (var id in order.DeletedOrderItemIDs.Split(',').Where(x=>x!=""))
             {
-                
-                throw ex;
+                OrderItem x = db.OrderItems.Find(Convert.ToInt64(id));
+                db.OrderItems.Remove(x);
             }
 
-            
 
+            db.SaveChanges();
+            return Ok();
+
+
+/*
             return CreatedAtRoute("DefaultApi", new { id = order.OrderID }, order);
+*/
         }
 
         // DELETE: api/Order/5
         [ResponseType(typeof(Order))]
         public IHttpActionResult DeleteOrder(long id)
         {
-            Order order = db.Orders.Find(id);
-            if (order == null)
+            Order order = db.Orders.Include(y=>y.OrderItems).
+                SingleOrDefault(x => x.OrderID == id);
+            if (order != null)
             {
-                return NotFound();
+                foreach (var item in order.OrderItems.ToList())
+                {
+                    db.OrderItems.Remove(item);
+                }
+                db.Orders.Remove(order);
+                db.SaveChanges();
+
+                
             }
-
-            db.Orders.Remove(order);
-            db.SaveChanges();
-
             return Ok(order);
         }
 

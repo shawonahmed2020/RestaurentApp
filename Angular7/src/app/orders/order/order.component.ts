@@ -6,7 +6,7 @@ import { NgForm } from '@angular/forms';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { Customer } from 'src/app/shared/customer.model';
 import { ToastrService } from 'ngx-toastr';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-order',
@@ -17,13 +17,23 @@ export class OrderComponent implements OnInit {
   customerList: Customer[];
   isValid = true;
   constructor(private service: OrderService,
-              private dialog: MatDialog,
-              private customerService: CustomerService,
-              private toastr: ToastrService,
-              private router: Router) { }
+    private dialog: MatDialog,
+    private customerService: CustomerService,
+    private toastr: ToastrService,
+    private router: Router,
+    private currentRouter: ActivatedRoute) { }
 
   ngOnInit() {
-    this.resetForm();
+    let ordreID = this.currentRouter.snapshot.paramMap.get('id');
+    if (ordreID === null) {
+      this.resetForm();
+    } else {
+      // tslint:disable-next-line:radix
+      this.service.getOrderByID(parseInt(ordreID)).then(res => {
+        this.service.formData = res.order;
+        this.service.orderItems = res.orderDetails;
+      });
+    }
 
     this.customerService.getCustomerList().then(res => this.customerList = res as Customer[]);
 
@@ -38,7 +48,8 @@ export class OrderComponent implements OnInit {
       OrderNo: Math.floor(100000 + Math.random() * 900000).toString(),
       CustomerID: 0,
       PMethod: '',
-      GTotal: 0
+      GTotal: 0,
+      DeletedOrderItemIDs: ''
     };
     this.service.orderItems = [];
   }
@@ -49,11 +60,14 @@ export class OrderComponent implements OnInit {
     dialogConfig.width = '50%';
     dialogConfig.data = { orderItemIndex, OrderId };
     this.dialog.open(OrderItemsComponent, dialogConfig).afterClosed().subscribe(res => {
-    this.updateGrandTotal();
+      this.updateGrandTotal();
     });
 
   }
   onDeleteOrderItem(orderItemID: number, i: number) {
+    if (orderItemID != null) {
+      this.service.formData.DeletedOrderItemIDs += orderItemID + '';
+    }
     this.service.orderItems.splice(i, 1);
     this.updateGrandTotal();
   }
@@ -77,12 +91,11 @@ export class OrderComponent implements OnInit {
   onSubmit(form: NgForm) {
     if (this.validateForm()) {
       this.service.saveOrUpdateOrder().subscribe(res => {
-      this.resetForm();
-      this.toastr.success('Submitted Successfully', 'Restaurent App');
-      this.router.navigate(['/orders']);
+        this.resetForm();
+        this.toastr.success('Submitted Successfully', 'Restaurent App');
+        this.router.navigate(['/orders']);
       });
     }
   }
-
 
 }
